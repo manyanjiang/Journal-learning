@@ -499,7 +499,7 @@ DEFAULTS（代码里的默认值）
 
 保存时注意**编码选 UTF-8**（记事本默认即可），文件必须仍是合法 JSON：不要少逗号、不要多逗号。
 
-> 如果你是在 **GitHub Actions** 上跑，这一步改成填仓库 Secrets：`SERVERCHAN_SENDKEY`，**不要新建任何文件**。见 [第 8.1 节](#8-每天自动运行)。
+> 如果你是在 **GitHub Actions** 上跑，这一步改成填仓库 Secrets：`JALERT_SERVERCHAN_SENDKEY`，**不要新建任何文件**。见 [第 8.1 节](#8-每天自动运行)。
 
 **第 4 步：立刻自检（不用等第二天）**
 
