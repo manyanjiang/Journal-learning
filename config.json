@@ -1,0 +1,565 @@
+{
+  "project": {
+    "name": "个人文献中心",
+    "timezone": "Asia/Shanghai"
+  },
+  "window": {
+    "days": 3,
+    "max_catchup_days": 30,
+    "max_items_per_journal": 60,
+    "workers": 6,
+    "rss_timeout_seconds": 25,
+    "api_timeout_seconds": 45,
+    "retries": 2,
+    "sources": {
+      "rss": true,
+      "openalex": true,
+      "crossref": true
+    }
+  },
+  "output": {
+    "dir": "reports",
+    "keep_days": 365,
+    "max_entries": 10,
+    "open_after_run": false,
+    "write_json_snapshot": true,
+    "source_status": "summary",
+    "frontmatter": true,
+    "cards": true,
+    "cards_html": "docs/index.html"
+  },
+  "keywords": [
+    {
+      "label": "CO2减排与碳排放",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "co2 emissions",
+        "co2 emission",
+        "carbon dioxide emissions",
+        "carbon dioxide emission",
+        "co2 emission reduction",
+        "carbon dioxide emission reduction",
+        "co2 mitigation",
+        "carbon dioxide mitigation",
+        "carbon abatement",
+        "emission reduction",
+        "emissions reduction",
+        "fossil fuel co2 emissions",
+        "power sector emissions",
+        "co2",
+        "carbon dioxide"
+      ]
+    },
+    {
+      "label": "CCUS与地质封存",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "ccus",
+        "ccs",
+        "carbon capture and storage",
+        "carbon capture and utilization",
+        "carbon capture and utilisation",
+        "carbon capture utilization and storage",
+        "carbon capture utilisation and storage",
+        "co2 capture",
+        "geological carbon storage",
+        "geologic carbon storage",
+        "co2 geological storage",
+        "co2 storage potential",
+        "geological storage potential",
+        "saline aquifer storage",
+        "carbon storage capacity",
+        "carbon transport and storage",
+        "source-sink matching",
+        "source sink matching",
+        "ccus chain",
+        "full-chain carbon capture",
+        "carbon capture transport and storage",
+        "co2 transport and storage",
+        "co2 storage resource assessment",
+        "storage resource assessment",
+        "carbon storage resource",
+        "kilometer-scale co2 storage",
+        "kilometre-scale co2 storage"
+      ]
+    },
+    {
+      "label": "CDR碳移除与负排放",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "carbon dioxide removal",
+        "carbon removal",
+        "negative emission",
+        "negative emissions",
+        "negative-emission technology",
+        "daccs",
+        "direct air capture",
+        "direct air carbon capture and storage",
+        "beccs",
+        "bioenergy with carbon capture and storage",
+        "enhanced weathering",
+        "ocean alkalinity enhancement",
+        "biochar carbon removal",
+        "carbon removal potential"
+      ]
+    },
+    {
+      "label": "能源转型与低碳技术",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "energy transition",
+        "energy transitions",
+        "low-carbon technology",
+        "low-carbon technologies",
+        "low carbon technology",
+        "low carbon technologies",
+        "clean energy transition",
+        "energy transformation",
+        "low-carbon pathway",
+        "low carbon pathway",
+        "decarbonization pathway",
+        "decarbonisation pathway",
+        "net-zero transition",
+        "net zero transition",
+        "energy roadmap",
+        "carbon neutrality",
+        "net zero"
+      ]
+    },
+    {
+      "label": "综合评估模型（GCAM/IAM）",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "gcam",
+        "global change analysis model",
+        "integrated assessment model",
+        "integrated assessment models",
+        "integrated assessment modeling",
+        "integrated assessment modelling",
+        "iam",
+        "messageix",
+        "remind model",
+        "image model",
+        "energy-economy model",
+        "energy economy model",
+        "global energy model",
+        "scenario analysis",
+        "energy system model",
+        "energy systems model"
+      ]
+    },
+    {
+      "label": "电力系统与风光资源",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "power system model",
+        "power system modeling",
+        "power system modelling",
+        "electricity system model",
+        "electricity market model",
+        "power grid",
+        "grid integration",
+        "capacity expansion",
+        "unit commitment",
+        "renewable integration",
+        "wind resource assessment",
+        "wind power potential",
+        "wind energy potential",
+        "solar resource assessment",
+        "solar energy potential",
+        "photovoltaic potential",
+        "renewable energy potential",
+        "renewable resource assessment",
+        "wind and solar",
+        "solar and wind",
+        "variable renewable energy"
+      ]
+    },
+    {
+      "label": "能源地理与全球空间布局",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "energy geography",
+        "spatial energy planning",
+        "energy spatial planning",
+        "global spatial distribution",
+        "spatial distribution of energy",
+        "geospatial",
+        "geographic information system",
+        "geographic information systems",
+        "spatial optimization",
+        "spatial optimisation",
+        "site selection",
+        "siting",
+        "deployment strategy",
+        "geographical distribution",
+        "geographic distribution",
+        "high-resolution spatial",
+        "kilometer-scale",
+        "kilometre-scale",
+        "spatially explicit",
+        "spatial allocation",
+        "geospatial modeling",
+        "geospatial modelling",
+        "global deployment",
+        "global siting",
+        "global spatial layout",
+        "spatial layout",
+        "geographical layout",
+        "spatial deployment",
+        "high spatial resolution",
+        "spatiotemporal modeling",
+        "spatiotemporal modelling",
+        "space-time modeling",
+        "space-time modelling",
+        "kilometer resolution",
+        "kilometre resolution"
+      ]
+    },
+    {
+      "label": "气候变化与极端天气",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "climate change",
+        "climate change impacts",
+        "climate mitigation",
+        "extreme weather",
+        "extreme climate event",
+        "extreme event",
+        "heatwave",
+        "heat wave",
+        "cold wave",
+        "drought",
+        "flood",
+        "compound climate event",
+        "climate extremes",
+        "climate risk",
+        "climate resilience",
+        "climate adaptation",
+        "climate impact attribution"
+      ]
+    },
+    {
+      "label": "城市与环境空间建模",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "urban energy model",
+        "urban energy system",
+        "urban energy systems",
+        "urban spatial model",
+        "urban spatial modeling",
+        "urban spatial modelling",
+        "urban geospatial",
+        "urban emissions",
+        "urban carbon emissions",
+        "urban decarbonization",
+        "urban decarbonisation",
+        "environmental assessment",
+        "environmental impact assessment",
+        "environmental modeling",
+        "environmental modelling",
+        "urban climate model",
+        "urban climate modeling",
+        "urban climate modelling",
+        "land use model",
+        "land-use change",
+        "urban land use",
+        "urban geography",
+        "city-scale energy model"
+      ]
+    },
+    {
+      "label": "生命周期与技术经济评价",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "life cycle assessment",
+        "life-cycle assessment",
+        "lifecycle assessment",
+        "life cycle analysis",
+        "life-cycle analysis",
+        "techno-economic assessment",
+        "techno-economic analysis",
+        "technoeconomic assessment",
+        "economic assessment",
+        "cost-benefit analysis",
+        "levelized cost",
+        "levelised cost",
+        "abatement cost",
+        "marginal abatement cost",
+        "life cycle cost",
+        "life-cycle cost",
+        "full-chain techno-economic analysis",
+        "full chain techno-economic analysis",
+        "techno-economic performance",
+        "economic viability",
+        "life cycle costing"
+      ]
+    },
+    {
+      "label": "减排政策与能源战略",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "climate policy",
+        "energy policy",
+        "decarbonization policy",
+        "decarbonisation policy",
+        "low-carbon policy",
+        "carbon pricing",
+        "carbon price",
+        "carbon tax",
+        "emissions trading",
+        "emission trading system",
+        "climate governance",
+        "energy strategy",
+        "energy technology roadmap",
+        "mitigation policy",
+        "policy pathway",
+        "energy transition policy"
+      ]
+    }
+  ],
+  "exclude_terms": [
+    "retraction",
+    "retracted",
+    "correction",
+    "corrigendum",
+    "erratum",
+    "author correction",
+    "publisher correction",
+    "editorial board",
+    "in this issue",
+    "issue information",
+    "table of contents",
+    "call for papers"
+  ],
+  "exclude_doi_prefixes": [
+    "10.1038/d41586"
+  ],
+  "tiers": {
+    "must_read": 12,
+    "worth_reading": 6,
+    "min_score": 3
+  },
+  "journals": [
+    {
+      "name": "Nature",
+      "issn": "0028-0836",
+      "rss": "https://www.nature.com/nature.rss",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "name": "Science",
+      "issn": "0036-8075",
+      "rss": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "name": "Proceedings of the National Academy of Sciences",
+      "issn": "0027-8424",
+      "rss": "https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=pnas",
+      "enabled": true,
+      "priority": 3
+    },
+    {
+      "name": "Nature Climate Change",
+      "issn": "1758-6798",
+      "rss": "https://www.nature.com/nclimate.rss",
+      "enabled": true,
+      "priority": 4
+    },
+    {
+      "name": "Nature Energy",
+      "issn": "2058-7546",
+      "rss": "https://www.nature.com/nenergy.rss",
+      "enabled": true,
+      "priority": 5
+    },
+    {
+      "name": "Nature Geoscience",
+      "issn": "1752-0908",
+      "rss": "https://www.nature.com/ngeo.rss",
+      "enabled": true,
+      "priority": 6
+    },
+    {
+      "name": "Nature Sustainability",
+      "issn": "2398-9629",
+      "rss": "https://www.nature.com/natsustain.rss",
+      "enabled": true,
+      "priority": 7
+    },
+    {
+      "name": "Nature Cities",
+      "issn": "2731-9997",
+      "rss": "https://www.nature.com/natcities.rss",
+      "enabled": true,
+      "priority": 8
+    },
+    {
+      "name": "Nature Communications",
+      "issn": "2041-1723",
+      "rss": "https://www.nature.com/ncomms.rss",
+      "enabled": true,
+      "priority": 9
+    },
+    {
+      "name": "Nature Reviews Earth & Environment",
+      "issn": "2662-138X",
+      "rss": "https://www.nature.com/natrevearthenviron.rss",
+      "enabled": true,
+      "priority": 10
+    },
+    {
+      "name": "Science Advances",
+      "issn": "2375-2548",
+      "rss": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=sciadv",
+      "enabled": true,
+      "priority": 11
+    },
+    {
+      "name": "One Earth",
+      "issn": "2590-3322",
+      "rss": "https://www.cell.com/one-earth/current.rss",
+      "enabled": true,
+      "priority": 12
+    },
+    {
+      "name": "Energy & Environmental Science",
+      "issn": "1754-5692",
+      "rss": "",
+      "enabled": true,
+      "priority": 13
+    },
+    {
+      "name": "Environmental Science & Technology",
+      "issn": "0013-936X",
+      "rss": "",
+      "enabled": true,
+      "priority": 14
+    },
+    {
+      "name": "Renewable and Sustainable Energy Reviews",
+      "issn": "1364-0321",
+      "rss": "https://rss.sciencedirect.com/publication/science/13640321",
+      "enabled": true,
+      "priority": 15
+    },
+    {
+      "name": "Renewable Energy",
+      "issn": "0960-1481",
+      "rss": "https://rss.sciencedirect.com/publication/science/09601481",
+      "enabled": true,
+      "priority": 16
+    },
+    {
+      "name": "Annual Review of Environment and Resources",
+      "issn": "1543-5938",
+      "rss": "",
+      "enabled": true,
+      "priority": 17
+    },
+    {
+      "name": "Applied Energy",
+      "issn": "0306-2619",
+      "rss": "https://rss.sciencedirect.com/publication/science/03062619",
+      "enabled": true,
+      "priority": 18
+    },
+    {
+      "name": "Earth's Future",
+      "issn": "2328-4277",
+      "rss": "https://agupubs.onlinelibrary.wiley.com/feed/23284277/most-recent",
+      "enabled": true,
+      "priority": 19
+    },
+    {
+      "name": "Global Environmental Change",
+      "issn": "0959-3780",
+      "rss": "https://rss.sciencedirect.com/publication/science/09593780",
+      "enabled": true,
+      "priority": 20
+    },
+    {
+      "name": "Journal of Cleaner Production",
+      "issn": "0959-6526",
+      "rss": "https://rss.sciencedirect.com/publication/science/09596526",
+      "enabled": true,
+      "priority": 21
+    },
+    {
+      "name": "Environmental Research Letters",
+      "issn": "1748-9326",
+      "rss": "https://iopscience.iop.org/journal/rss/1748-9326",
+      "enabled": true,
+      "priority": 22
+    },
+    {
+      "name": "Geophysical Research Letters",
+      "issn": "1944-8007",
+      "rss": "https://agupubs.onlinelibrary.wiley.com/feed/19448007/most-recent",
+      "enabled": true,
+      "priority": 23
+    },
+    {
+      "name": "Energy Economics",
+      "issn": "0140-9883",
+      "rss": "https://rss.sciencedirect.com/publication/science/01409883",
+      "enabled": true,
+      "priority": 24
+    },
+    {
+      "name": "npj Clean Energy",
+      "issn": "3005-1165",
+      "rss": "https://www.nature.com/npjcleanenergy.rss",
+      "enabled": true,
+      "priority": 25,
+      "crossref": false
+    },
+    {
+      "name": "npj Climate and Atmospheric Science",
+      "issn": "2397-3722",
+      "rss": "https://www.nature.com/npjclimatsci.rss",
+      "enabled": true,
+      "priority": 26
+    }
+  ],
+  "push": {
+    "enabled": false,
+    "skip_when_empty": true,
+    "max_items": 6,
+    "max_chars": 1800,
+    "channels": {
+      "serverchan": {
+        "enabled": true,
+        "sendkey": ""
+      },
+      "pushplus": {
+        "enabled": true,
+        "token": ""
+      },
+      "bark": {
+        "enabled": false,
+        "key": "",
+        "server": "https://api.day.app",
+        "sound": "bird"
+      }
+    }
+  },
+  "log": {
+    "dir": "logs",
+    "level": "INFO"
+  }
+}
