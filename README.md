@@ -1,0 +1,2 @@
+# Journal-learning
+参考journal-alert建立一个自己的文献阅读中心，从OpenAlex/Crossref API中获取16个相关期刊的RSS订阅源和数据，根据关键词对内容进行评分和去重，生成每日Markdown格式报告，可网页查看信息。
