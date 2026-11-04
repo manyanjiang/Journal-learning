@@ -1,4 +1,4 @@
-# 个人文献中心（journal-reading）
+# 个人文献中心（journal-learning）
 
 参考 Journal-alert 建立的个人文献阅读中心，从期刊 RSS、OpenAlex 与 Crossref 获取文献，按你的研究方向评分和去重，并生成每日 Markdown 报告及可本地查看的网页。
 
