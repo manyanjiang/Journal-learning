@@ -28,6 +28,11 @@
     "cards": true,
     "cards_html": "docs/index.html"
   },
+  "translation": {
+    "enabled": true,
+    "api_url": "https://api-free.deepl.com/v2/translate",
+    "summary_chars": 320
+  },
   "keywords": [
     {
       "label": "CO2减排与碳排放",

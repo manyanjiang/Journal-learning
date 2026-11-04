@@ -23,12 +23,13 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from jalert import push as push_module  # noqa: E402
-from jalert.cards import parse_report, write_cards  # noqa: E402
+from jalert.cards import collect, parse_report, write_cards  # noqa: E402
 from jalert.config import describe_secret_sources, load_config  # noqa: E402
 from jalert.fetch import collect_items, http_request, make_uid  # noqa: E402
 from jalert.report import build_digest, build_markdown  # noqa: E402
 from jalert.score import Scorer, tier_of  # noqa: E402
 from jalert.state import Store, last_run_started  # noqa: E402
+from jalert.translate import translate_articles  # noqa: E402
 
 TIER_RANK = {"must_read": 0, "worth_reading": 1, "other": 2}
 
@@ -217,21 +218,37 @@ def cards_output_path(cfg: dict) -> Path:
     return path if path.is_absolute() else Path(cfg["_root"]) / path
 
 
-def build_cards_page(cfg: dict, log) -> int:
+def build_cards_page(cfg: dict, log, *, translate_missing: bool = False) -> int:
     """Rebuild the static card-wall page from every report on disk.
 
     Kept separate from the fetch pipeline on purpose: it only reads ``reports/``,
     so it can be run on its own (``--cards``) to refresh the page without
     touching the network, the ledger or the push channels.
     """
+    topic_labels = [k.get("label", "") for k in cfg.get("keywords", [])]
+    journal_order = [j.get("name", "") for j in cfg.get("journals", [])
+                     if j.get("enabled", True)]
+    translation_cfg = cfg.get("translation", {})
+    translations = {}
+    if translation_cfg.get("enabled", True):
+        articles, _reports, _topics = collect(Path(cfg["reports_dir"]), topic_labels, journal_order)
+        cache_path = Path(cfg["state_db"]).with_name("translations.json")
+        translations = translate_articles(
+            articles,
+            cache_path,
+            api_key=os.environ.get("DEEPL_AUTH_KEY", "").strip() if translate_missing else "",
+            summary_chars=int(translation_cfg.get("summary_chars", 320)),
+            api_url=str(translation_cfg.get("api_url") or "https://api-free.deepl.com/v2/translate"),
+            log=log,
+        )
+
     written = write_cards(
         Path(cfg["reports_dir"]),
         cards_output_path(cfg),
         project=cfg.get("project", {}).get("name", "文献日报"),
-        # Keyword order drives the page's section order, and a freshly added
-        # topic needs a tab before any report mentions it.
-        topic_labels=[k.get("label", "") for k in cfg.get("keywords", [])],
-        journal_order=[j.get("name", "") for j in cfg.get("journals", [])],
+        topic_labels=topic_labels,
+        journal_order=journal_order,
+        translations=translations,
         log=log,
     )
     if written is None:
@@ -738,7 +755,7 @@ def run(args: argparse.Namespace) -> int:
             # convenience: an HTML bug must never fail the daily run.
             if cfg.get("output", {}).get("cards", True):
                 try:
-                    build_cards_page(cfg, log)
+                    build_cards_page(cfg, log, translate_missing=True)
                 except Exception as exc:  # noqa: BLE001 - deliberately broad
                     log.warning("cards page build failed (report unaffected): %s", exc)
 

@@ -205,7 +205,9 @@ def collect(reports_dir: Path, topic_labels: list[str] | None = None,
     sighting, so a paper that shows up in several days' reports appears once,
     with the freshest metadata.
 
-    ``topic_labels`` is ``config.json``'s keyword order and wins outright. That
+    When ``journal_order`` is supplied, it is also the allowlist for articles;
+    this keeps reports from journals removed from the current config out of the
+    current card wall. ``topic_labels`` is ``config.json``'s keyword order and wins outright. That
     matters when a topic has just been added: no report on disk mentions it yet,
     but it still has to get a tab, otherwise the category is invisible until the
     next report happens to contain it. Labels seen only in the reports are
@@ -219,18 +221,21 @@ def collect(reports_dir: Path, topic_labels: list[str] | None = None,
     articles: list[dict] = []
     topics: list[str] = [t for t in (topic_labels or []) if t]
     seen: set[str] = set()
+    allowed_journals = set(journal_order) if journal_order is not None else None
 
     for path in paths:
         meta, entries = parse_report(path)
         # Several files share a date now, so the day's row accumulates instead
         # of being appended once per file.
         day = by_day.setdefault(meta["date"], {"date": meta["date"], "generated": "", "count": 0})
-        day["count"] += len(entries)
         day["generated"] = max(day["generated"], meta.get("generated", "") or "")
         for label in meta.get("topics", []):
             if label and label not in topics:
                 topics.append(label)
         for entry in entries:
+            if allowed_journals is not None and entry["journal"] not in allowed_journals:
+                continue
+            day["count"] += 1
             key = (entry["doi"] or entry["title"]).lower()
             if key in seen:
                 continue
@@ -287,7 +292,9 @@ def build_html(articles: list[dict], reports: list[dict], topics: list[str],
 
 def write_cards(reports_dir: Path, out_path: Path, *, project: str = "文献日报",
                 topic_labels: list[str] | None = None,
-                journal_order: list[str] | None = None, log=None) -> Path | None:
+                journal_order: list[str] | None = None,
+                translations: dict[str, dict[str, str]] | None = None,
+                log=None) -> Path | None:
     """Build the page from ``reports_dir`` into ``out_path``.
 
     Returns the written path, or ``None`` when there is nothing to publish.
@@ -297,6 +304,13 @@ def write_cards(reports_dir: Path, out_path: Path, *, project: str = "文献日�
         if log:
             log.info("cards page skipped: no reports found in %s", reports_dir)
         return None
+
+    for article in articles:
+        translation = (translations or {}).get(
+            str(article.get("doi") or article.get("url") or article.get("title") or "").lower(), {}
+        )
+        article["titleZh"] = translation.get("title", "")
+        article["abstractZh"] = translation.get("abstract", "")
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -332,7 +346,8 @@ def main(argv: list[str] | None = None) -> int:
         try:
             cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
             topic_labels = [k.get("label", "") for k in cfg.get("keywords", [])]
-            journal_order = [j.get("name", "") for j in cfg.get("journals", [])]
+            journal_order = [j.get("name", "") for j in cfg.get("journals", [])
+                             if j.get("enabled", True)]
         except (OSError, json.JSONDecodeError) as exc:
             print(f"警告：{cfg_path} 读取失败（{exc}），改用日报里的标签顺序。")
 
@@ -489,6 +504,11 @@ svg.ic{display:block;flex:none}
 .title{font-size:14.5px;font-weight:700;line-height:1.42;margin:0 0 7px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .excerpt{font-size:12.5px;line-height:1.62;color:var(--ink2);margin:0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .excerpt.none{color:var(--ink3);font-style:italic;font-size:12px;-webkit-line-clamp:2}
+.translation{margin-top:9px;padding:8px 9px;border-left:2px solid #4d8c72;background:#f2f7f4;color:#385548}
+.translation-label{font-size:10.5px;font-weight:800;color:#47755f;margin:0 0 4px}
+.translation-title{font-size:12.5px;font-weight:700;line-height:1.5;margin:0 0 3px}
+.translation-abstract{font-size:11.5px;line-height:1.55;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.translation-pending{font-size:11px;color:var(--ink3);margin:0}
 .tagrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .tag{font-size:11px;padding:2px 8px;border-radius:6px;background:#f4f5f7;color:var(--ink2);font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag.must_read{background:#ffe9ed;color:#e01b39}
@@ -767,6 +787,13 @@ svg.ic{display:block;flex:none}
       + '<div class="body">'
       +   '<h3 class="title">'+esc(a.title)+'</h3>'
       +   ab
+      +   '<div class="translation">'
+      +     '<div class="translation-label">中文速览</div>'
+      +     (a.titleZh
+              ? '<p class="translation-title">'+esc(a.titleZh)+'</p>'
+                + (a.abstractZh?'<p class="translation-abstract">'+esc(a.abstractZh)+'</p>':'')
+              : '<p class="translation-pending">待运行 Actions 生成译文</p>')
+      +   '</div>'
       +   '<div class="tagrow">'+tags+'</div>'
       + '</div>'
       + '<div class="foot">'

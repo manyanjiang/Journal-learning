@@ -171,6 +171,7 @@ run_daily.cmd --cards
 | `notes/` | 私有研究假设、阅读笔记与模板，手动编辑并提交 |
 | `state/daily/YYYY-MM-DD.json` | 当日报表快照。**不入库**，只上传为 artifact |
 | `state/seen.sqlite` | 历史库：`articles` 表是累积文献台账，`runs` 表是运行日志 |
+| `state/translations.json` | 文献中英文题目与短摘要译文缓存，避免重复调用翻译 API |
 | `logs/` | 运行日志（日报库那边另有一份 `.sync.log`） |
 | `run_daily.cmd` | 启动脚本（自动寻找可用的 Python） |
 | `make_package.py` | 打包成可移植 zip，供复制到另一台电脑 |
@@ -197,6 +198,8 @@ python make_package.py --keep-secrets  # 保留密钥：只在自己电脑之间
 
 小红书式瀑布流，**一张卡片就是一篇文献**，按学科分组，点卡片弹出完整摘要、作者、DOI 和原文链接。顶部可以按学科 / 分级筛选，也能搜标题、摘要、作者、期刊。
 
+每张卡片在英文题目和摘要下方显示“中文速览”，包括中文题目和摘要前 320 个英文字符的译文。每日 Actions 使用 DeepL API 翻译新增或有变化的文献，缓存写入 `state/translations.json`。初次配置后会补译已有文献；没有 API Key 时页面显示待翻译状态，抓取和日报仍会正常完成。
+
 个人使用时，卡片详情还可以记录已读状态、收藏和阅读笔记。它们保存在当前浏览器，不会上传到 GitHub，也不会自动同步到其他设备。清理浏览器站点数据前请先考虑备份。
 
 需要修改**实际抓取内容**时，编辑 `config.json` 的 `keywords`（主题与关键词）和 `journals`（期刊及数据源），而不是只改网页筛选。当前关键词和 26 本期刊已按你的研究方向与优先顺序整理。日报由 GitHub Actions 自动生成；本地可用 `run_daily.cmd --once --days 14 --no-push` 预览。
@@ -207,7 +210,7 @@ python make_package.py --keep-secrets  # 保留密钥：只在自己电脑之间
 | 篇数 | 等于日报里实际列出的篇数。受 `output.max_entries` 限制，所以日报列多少，页面就有多少 |
 | 期刊优先级 | `config.json` 中期刊列表的顺序就是偏好顺序；相关性和日期相同时，靠前期刊优先显示。网页“按期刊”也按此顺序排列 |
 | 依赖 | **零外部资源**——没有 CDN、没有网络字体、没有图片请求。断网、`file://` 双击打开都正常 |
-| 更新时机 | `run.py --once` 末尾自动重建并随日报提交到私有仓库。也可单独跑 `run.py --cards` |
+| 更新时机 | 每日 Actions 先补译，再重建并提交页面。`run.py --cards` 只读取已有缓存，不调用翻译 API |
 
 配置项（都有默认值，不写也能跑）：
 
@@ -402,6 +405,7 @@ SORT file.name DESC
 // config.local.json —— 只写要覆盖的部分
 {
   "push": {
+    "enabled": true,
     "channels": {
       "serverchan": { "enabled": true, "sendkey": "SCT..." }
     }
@@ -601,13 +605,22 @@ on:
 
 #### 一次性配置
 
-在 **Settings → Actions → General → Workflow permissions** 中允许工作流读写仓库内容。消息推送默认关闭，不需要添加推送密钥。可选地在 **Settings → Secrets and variables → Actions → Variables** 添加：
+在 **Settings → Actions → General → Workflow permissions** 中允许工作流读写仓库内容。在 **Settings → Secrets and variables → Actions → Secrets** 中添加以下 Secret：
+
+| Name | Value |
+|---|---|
+| `JALERT_SERVERCHAN_SENDKEY` | Server酱 SendKey；只保存在 GitHub Secret，不要写入配置文件 |
+| `DEEPL_AUTH_KEY` | （可选）DeepL API Free authentication key；未配置时跳过翻译，不影响抓取 |
+
+配置 Server酱 Secret 后，Actions 的每日推送会启用。配置 DeepL Secret 后，每日任务会将英文题目和摘要片段发送给 DeepL，译文保存在私有仓库；未配置时卡片显示待翻译状态。
+
+可选地在 **Settings → Secrets and variables → Actions → Variables** 添加：
 
 | Name | Value |
 |---|---|
 | `JALERT_MAILTO` | 你的邮箱。OpenAlex/Crossref 对提供了真实联系方式的调用者给「礼貌池」优先权，成功率更高 |
 
-邮件地址是可选项；当前无需设置任何 Secret。
+邮件地址是可选项；推送和翻译 Secret 按需配置。
 
 #### 手动触发与验收
 
@@ -843,55 +856,40 @@ Start-ScheduledTask -TaskName "JournalAlertDaily"
 
 ## 10. 数据源
 
-**当前配置：26 本期刊中 23 本配置了 RSS；Energy & Environmental Science、Environmental Science & Technology、Annual Review of Environment and Resources 通过 OpenAlex + Crossref 获取。npj Clean Energy 使用 RSS + OpenAlex（Crossref 对其 ISSN 返回 404）。其余来源会按日检状态与 RSS/API 可用性变化。**
+**当前实际抓取清单以 `config.json` 的 `journals` 数组为准：以下 26 本全部启用，按偏好顺序排列。** 每日流程只抓取这些启用的期刊；卡片页也会从历史日报中筛掉清单之外的旧期刊。历史 Markdown 日报保留原样。
 
-| 期刊 | RSS | OpenAlex | Crossref |
-|---|---|---|---|
-| Nature | ✅ 75 | ⏱ 偶发超时 | ✅ 5 |
-| Science | ✅ 45 | ✅ 42 | ✅ 46 |
-| Nature Climate Change | ✅ 8 | ✅ | ✅ 1 |
-| Nature Geoscience | ✅ 8 | ⏱ 偶发超时 | ✅ 1 |
-| Nature Sustainability | ✅ 8 | ✅ | ✅ |
-| Nature Cities | ✅ 8 | ✅ 1 | ✅ 1 |
-| Nature Communications | ✅ 8 | ✅ 34 | ✅ 61 |
-| Science Advances | ✅ 83 | ⏱ 偶发超时 | ✅ 83 |
-| Earth's Future | ✅ 9 | ✅ 4 | ✅ 30 |
-| Atmospheric Chemistry and Physics | ✅ 20 | ✅ 5 | ✅ 5 |
-| Environmental Science & Technology | ❌ ACS 已停 RSS | ✅ 23 | ✅ 25 |
-| Environmental Research Letters | ✅ 10 | ✅ 5 | ✅ 14 |
-| Geophysical Research Letters | ✅ 26 | ✅ 5 | ✅ 13 |
-| Journal of Geophysical Research: Atmospheres | ✅ 14 | ✅ 5 | ✅ 6 |
-| Atmospheric Environment | ✅ 55 | ✅ 1 | ✅ 60 |
-| Remote Sensing of Environment | ✅ 86 | ✅ 7 | ✅ 60 |
-| Computers, Environment and Urban Systems | ✅ 37 | ✅ 1 | ✅ 37 |
-| Landscape and Urban Planning | ✅ 34 | ✅ 9 | ✅ 65 |
-| Urban Climate | ✅ 93 | ✅ 7 | ✅ 37 |
-| Cities | ✅ 100 | ✅ 29 | ✅ 294 |
-| ISPRS Journal of Photogrammetry and Remote Sensing | ✅ 60 | ✅ 10 | ✅ 79 |
-| International Journal of Geographical Information Science | ❌ 无 RSS | ✅ 0 | ✅ 1 |
-| Transactions in GIS | ❌ 无 RSS | ✅ 3 | ✅ 4 |
-| Environment and Planning B: Urban Analytics and City Science | ❌ 无 RSS | ✅ 2 | ✅ 2 |
+| 序号 | 期刊 | 配置的数据源 |
+|---:|---|---|
+| 1 | Nature | RSS + OpenAlex + Crossref |
+| 2 | Science | RSS + OpenAlex + Crossref |
+| 3 | PNAS（The Proceedings of the National Academy of Sciences） | RSS + OpenAlex + Crossref |
+| 4 | Nature Climate Change | RSS + OpenAlex + Crossref |
+| 5 | Nature Energy | RSS + OpenAlex + Crossref |
+| 6 | Nature Geoscience | RSS + OpenAlex + Crossref |
+| 7 | Nature Sustainability | RSS + OpenAlex + Crossref |
+| 8 | Nature Cities | RSS + OpenAlex + Crossref |
+| 9 | Nature Communications | RSS + OpenAlex + Crossref |
+| 10 | Nature Reviews Earth & Environment | RSS + OpenAlex + Crossref |
+| 11 | Science Advances | RSS + OpenAlex + Crossref |
+| 12 | One Earth | RSS + OpenAlex + Crossref |
+| 13 | Energy & Environmental Science | OpenAlex + Crossref |
+| 14 | Environmental Science & Technology | OpenAlex + Crossref |
+| 15 | Renewable & Sustainable Energy Reviews | RSS + OpenAlex + Crossref |
+| 16 | Renewable Energy | RSS + OpenAlex + Crossref |
+| 17 | Annual Review of Environment and Resources | OpenAlex + Crossref |
+| 18 | Applied Energy | RSS + OpenAlex + Crossref |
+| 19 | Earth's Future | RSS + OpenAlex + Crossref |
+| 20 | Global Environmental Change | RSS + OpenAlex + Crossref |
+| 21 | Journal of Cleaner Production | RSS + OpenAlex + Crossref |
+| 22 | Environmental Research Letters | RSS + OpenAlex + Crossref |
+| 23 | Geophysical Research Letters | RSS + OpenAlex + Crossref |
+| 24 | Energy Economics | RSS + OpenAlex + Crossref |
+| 25 | npj Clean Energy | RSS + OpenAlex |
+| 26 | npj Climate and Atmospheric Science | RSS + OpenAlex + Crossref |
 
-数字是实测某一天时间窗内的条数，仅代表量级。⏱ 表示海外 API 偶发连接超时（重试后多数会成功，即便一直失败也有另外两个源兜底）。
+23 本配置了 RSS，3 本使用 OpenAlex + Crossref；npj Clean Energy 的 Crossref 通道关闭。以上表示配置通道，不代表每次运行都会成功；实际状态以当日日报的“数据源状态”为准。单一数据源失败不会影响其他通道。
 
-> 表格下半的 8 本刊是 2026-10-10 为「城市地理信息系统」学科新增的（Elsevier 的 5 本走 ScienceDirect RSS，三家 GIS/城市类刊没有 RSS）。它们的数字按**近 7 天**窗口实测，和上半的窗口长度不同，只看量级即可。三家纯 API 的刊物本身出版频率就低（一周 1–4 篇），量少属正常。
-
-**云端实测（2026-10-05）**：Actions 上 16 刊 × 3 源 = 48 次调用，**成功 46 次**。失败的 2 次是 Nature Cities 与 Nature Climate Change 的 RSS 报 XML 解析错误（`not well-formed (invalid token)`），0.2 秒即返回，属瞬时问题——本机抓同一地址正常。**因为每刊都有多源兜底，覆盖没有缺口。**
-
-**云端实测（2026-10-10，扩到 24 刊后）**：24 刊 × 3 源 = 72 次调用，**成功 69 次**，抓取 772 篇（去重后）。失败的 3 次全部是 Nature 系 RSS 的同一个 XML 解析错误（Nature Geoscience / Nature Sustainability / Nature Cities），与新增的 8 本刊无关——**新增的 5 个 ScienceDirect RSS 全部一次成功**。
-
-踩坑记录（以后加期刊时有用）：
-
-* **Wiley / AGU 的 RSS 地址必须用「不带横线」的 ISSN**：`https://agupubs.onlinelibrary.wiley.com/feed/19448007/most-recent`。带横线的 `1944-8007` 一律 404，这一条卡了很久。
-* **ACS（ES&T）已停止提供 RSS**，落地页里也没有 feed 链接，只能靠 OpenAlex + Crossref。
-* **ScienceDirect（Elsevier）的 RSS 可用**：`https://rss.sciencedirect.com/publication/science/<不带横线的ISSN>`，而且条数很多（Atmospheric Environment 55 条、RSE 86 条）。2026-10-10 又验证了 5 本城市/GIS 类刊同样可用：CEUS、Landscape and Urban Planning、Urban Climate、Cities、ISPRS J. Photogrammetry。
-* **不是所有刊都有 RSS**。三家 GIS/城市类刊（IJGIS、Transactions in GIS、EPB）在 Taylor & Francis / SAGE 上，feed 地址不稳定，索性留 `"rss": ""` 走 OpenAlex + Crossref——**空 RSS 是合法配置，不会报错**，和 ES&T 一个待遇。
-* **Copernicus（ACP）**：`https://acp.copernicus.org/xml/rss2_0.xml`。
-* **IOP（ERL）**：`https://iopscience.iop.org/journal/rss/1748-9326`。
-* **Nature 的 RSS 里混有大量新闻/评论/播客**（DOI 前缀 `10.1038/d41586`），已由 `exclude_doi_prefixes` 过滤掉，只留研究论文。
-* **Elsevier 的日期是「期号日期」，可能在未来**（例如今天 10-04，条目显示 12-01）。报告里这类条目会自动标注「在线预发表」，排序时也按今天处理，不会顶到最前面。
-* **Crossref 的日期字段可能只有年份**（`date-parts: [[2026]]`），早期版本会因此崩溃，现已容错。
-* **OpenAlex/Crossref 对国内网络偶发超时**，所以设了 45 秒超时 + 重试，并把抓取做成 6 路并发（顺序抓取要 16 分钟，并发后约 4 分钟）。
+Nature RSS 中的新闻/评论/播客通过 DOI 前缀 `10.1038/d41586` 排除。OpenAlex/Crossref 偶有网络超时，流程会重试并记录逐刊状态。
 
 ---
 

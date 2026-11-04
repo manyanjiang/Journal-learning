@@ -34,6 +34,8 @@ jobs:
       # Without this the container is UTC and run.py would name the report with
       # yesterday's date (23:30 UTC is already "tomorrow" in Beijing).
       TZ: Asia/Shanghai
+      DEEPL_AUTH_KEY: ${{ secrets.DEEPL_AUTH_KEY }}
+      JALERT_SERVERCHAN_SENDKEY: ${{ secrets.JALERT_SERVERCHAN_SENDKEY }}
       # Optional: a real contact address gets OpenAlex/Crossref "polite pool" priority.
       JALERT_MAILTO: ${{ vars.JALERT_MAILTO }}
 
