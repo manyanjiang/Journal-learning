@@ -28,7 +28,9 @@ def push_serverchan(sendkey: str, title: str, body: str) -> dict:
             method="POST",
         )
     except FetchError as exc:
-        return _result("serverchan", False, str(exc))
+        # The endpoint path contains the SendKey; never include it in logs.
+        detail = str(exc).split(" -> ", 1)[-1]
+        return _result("serverchan", False, detail)
     text = raw.decode("utf-8", errors="replace")
     if status != 200:
         return _result("serverchan", False, f"HTTP {status}: {text[:160]}")
