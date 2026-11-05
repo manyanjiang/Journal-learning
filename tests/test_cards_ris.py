@@ -33,7 +33,7 @@ class CardRisExportTests(unittest.TestCase):
         )
         result = subprocess.run(
             [self.node, "-e", script], input=json.dumps(article), text=True,
-            capture_output=True, check=True,
+            capture_output=True, check=True, encoding="utf-8",
         )
         return json.loads(result.stdout)
 
@@ -66,6 +66,27 @@ class CardRisExportTests(unittest.TestCase):
         self.assertNotIn("AB  -", ris)
         self.assertNotIn("UR  -", ris)
         self.assertTrue(ris.endswith("ER  - \r\n"))
+
+    def test_omits_abstract_that_the_daily_report_marked_as_truncated(self):
+        ris = self.serialize({
+            "title": "Source title",
+            "abstract": "Only the first part …",
+            "abstractTruncated": True,
+        })
+        self.assertNotIn("AB  -", ris)
+        self.assertIn("TI  - Source title\r\n", ris)
+
+    def test_uses_a_safe_doi_based_filename(self):
+        script = (
+            "const vm=require('node:vm');\n"
+            f"vm.runInThisContext({json.dumps(self.helpers)});\n"
+            "process.stdout.write(risFilename(JSON.parse(process.argv[1])));\n"
+        )
+        result = subprocess.run(
+            [self.node, "-e", script, json.dumps({"doi": "10.1038/a:b"})],
+            text=True, capture_output=True, check=True, encoding="utf-8",
+        )
+        self.assertEqual(result.stdout, "10.1038_a_b.ris")
 
     def test_modal_places_ris_download_with_read_and_favorite_actions(self):
         page = build_html([], [], [], project="Test", generated_at="2026-11-05 10:00")

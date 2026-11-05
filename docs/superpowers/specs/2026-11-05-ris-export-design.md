@@ -12,7 +12,7 @@ Add one `下载 RIS` button beside the existing read and favorite actions. Activ
 
 Export only bibliographic fields already present on that article card and sourced from the publication feeds or bibliographic APIs. Do not translate, infer, or synthesize citation fields. Omit unavailable fields. Escape RIS delimiters and line breaks so user-facing text cannot corrupt the record. Use UTF-8 text with CRLF line endings and a final `ER  -` record terminator.
 
-Map available values to RIS fields: `TY` journal article, `TI` title, repeated `AU` authors, `JO` journal, `PY` publication year parsed from the recorded publication date, `DO` DOI, `AB` abstract, `UR` article URL, and `ER` record end. Only include a tag when its source value exists; use the recorded title as-is and do not construct a DOI URL when the article URL is absent.
+Map available values to RIS fields: `TY` journal article, `TI` title, repeated `AU` authors, `JF` journal, `PY` publication year parsed from the recorded publication date, `DO` DOI, `AB` abstract, `UR` article URL, and `ER` record end. Only include a tag when its source value exists; use the recorded title as-is and do not construct a DOI URL when the article URL is absent. Daily reports explicitly mark abstracts shortened at 700 characters with a trailing ` …`; omit `AB` for those cards so a partial excerpt is not represented as a complete abstract.
 
 ## Boundaries
 

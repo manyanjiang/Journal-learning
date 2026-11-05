@@ -193,6 +193,7 @@ def _parse_entry(block: str, match: re.Match) -> dict:
         "authors": authors,
         "authorMore": more,
         "abstract": _clean(abstract),
+        "abstractTruncated": abstract.endswith(" …"),
     }
 
 
@@ -680,7 +681,10 @@ svg.ic{display:block;flex:none}
     var year = date.match(/^(\d{4})(?:-|$)/);
     lines.push(risField('PY',year ? year[1] : ''));
     lines.push(risField('DO',article.doi));
-    lines.push(risField('AB',article.abstract));
+    var abstract = risValue(article.abstract);
+    if(!article.abstractTruncated && !abstract.endsWith(' …')){
+      lines.push(risField('AB',abstract));
+    }
     lines.push(risField('UR',article.url));
     lines.push('ER  - \r\n');
     return lines.join('');
