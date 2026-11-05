@@ -416,6 +416,8 @@ def rerender(args, cfg, log, day, tiers, day_snapshot, report_path) -> int:
     )
     log.info("re-rendered %d report file(s) from snapshot (%d entries)",
              len(written), len(day_entries))
+    if cfg.get("output", {}).get("cards", True):
+        build_cards_page(cfg, log, translate_missing=True)
     if args.print_report:
         print("\n" + main_markdown)
     return 0
