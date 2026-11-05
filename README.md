@@ -391,7 +391,7 @@ SORT file.name DESC
 * 想临时屏蔽某类内容，加到 `exclude_terms`（命中即整条丢弃，默认已屏蔽撤稿/勘误/社论）。
 * `exclude_doi_prefixes` 默认屏蔽 `10.1038/d41586`（Nature 新闻/评论/播客），只保留研究论文。
 * 增删期刊：`journals` 数组里加 `{ "name": ..., "issn": ..., "rss": ... }`。`issn` 必须准确，OpenAlex/Crossref 靠它取数。
-* **只想每天看最重要的几篇**：`output.max_entries`（默认 `0` = 不限，当前设为 `10`）。超过就只列得分最高的 N 篇，按「必读 → 值得一读 → 其他相关」的层级截取；**全部命中仍会进历史库和 `reports/YYYY-MM-DD.json`**，所以把数值调大后执行 `--rerender` 即可把其余几篇补回报告，不用重新联网抓取。
+* **控制日报展示数量**：`output.max_entries`（`0` = 不限；当前不限篇数）。超过设定数量时，只列得分最高的 N 篇，按「必读 → 值得一读 → 其他相关」截取；**全部命中仍会进历史库和 `reports/YYYY-MM-DD.json`**，调大上限后执行 `--rerender` 即可补回其余条目，不用重新联网抓取。
 * **报告末尾的数据源表太长**：`output.source_status` 三档 —— `full`（完整表格，排查数据源时用，是默认值）、`summary`（一切正常时只留一行，有失败才列短表，`config.json` 里用的是这个）、`none`（一个字都不提）。每篇日报后面都跟着 47 行表格实在没必要。
 * **要不要 YAML 属性**：`output.frontmatter`（默认 `true`）决定日报头部是否写 `date` / `must_read` / `topics` 等属性。用 Obsidian 看日报就保持开着，见 [第 5 节](#5-用-obsidian-管理日报)。
 

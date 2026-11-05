@@ -406,7 +406,10 @@ def rerender(args, cfg, log, day, tiers, day_snapshot, report_path) -> int:
         fetched_total=int(snapshot.get("fetched", 0)),
         matched_total=int(snapshot.get("matched", 0)),
         new_count=int(snapshot.get("new_total", len(day_entries))),
-        seen_before=0,
+        seen_before=max(
+            0,
+            int(snapshot.get("matched", 0)) - int(snapshot.get("new_total", len(day_entries))),
+        ),
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
         reports_dir=report_path.parent,
         log=log,

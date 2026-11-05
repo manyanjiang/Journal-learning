@@ -15,10 +15,19 @@ on:
         description: "只跑指定数据源，逗号分隔（如 openalex,crossref）。留空 = 全部"
         required: false
         default: ""
+      snapshot_run_id:
+        description: "从已有运行附件重排完整日报（如 41946606131）；留空 = 正常抓取"
+        required: false
+        default: ""
+      snapshot_artifact:
+        description: "对应附件名；本次 60 天结果是 logs-1"
+        required: false
+        default: "logs-1"
 
 # Needed so the job can commit the dedupe ledger and the daily report back.
 permissions:
   contents: write
+  actions: read
 
 # Never let two runs overlap; queue instead of cancelling.
 concurrency:
@@ -52,15 +61,29 @@ jobs:
         continue-on-error: true
         run: python run.py --doctor
 
+      - name: Download prior run snapshot
+        if: ${{ inputs.snapshot_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.snapshot_artifact }}
+          run-id: ${{ inputs.snapshot_run_id }}
+          github-token: ${{ github.token }}
+          path: .
+
       - name: Run pipeline
         env:
           EXTRA_DAYS: ${{ inputs.days }}
           EXTRA_SOURCES: ${{ inputs.sources }}
+          SNAPSHOT_RUN_ID: ${{ inputs.snapshot_run_id }}
         run: |
           set -eu
-          ARGS="--once"
-          if [ -n "${EXTRA_DAYS}" ]; then ARGS="$ARGS --days ${EXTRA_DAYS}"; fi
-          if [ -n "${EXTRA_SOURCES}" ]; then ARGS="$ARGS --sources ${EXTRA_SOURCES}"; fi
+          if [ -n "${SNAPSHOT_RUN_ID}" ]; then
+            ARGS="--rerender"
+          else
+            ARGS="--once"
+            if [ -n "${EXTRA_DAYS}" ]; then ARGS="$ARGS --days ${EXTRA_DAYS}"; fi
+            if [ -n "${EXTRA_SOURCES}" ]; then ARGS="$ARGS --sources ${EXTRA_SOURCES}"; fi
+          fi
           echo "python run.py ${ARGS}"
           python run.py ${ARGS}
 
