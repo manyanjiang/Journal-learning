@@ -98,5 +98,93 @@ class CardRisExportTests(unittest.TestCase):
         self.assertIn("下载 RIS", actions.group(1))
 
 
+class ReadingNotesExportTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.node = shutil.which("node")
+        if not cls.node:
+            raise unittest.SkipTest("Node.js is required to exercise the browser notes serializer")
+        page = build_html([], [], [], project="Test", generated_at="2026-11-05 10:00")
+        match = re.search(
+            r"// NOTES_EXPORT_HELPERS_START\s*(.*?)\s*// NOTES_EXPORT_HELPERS_END",
+            page,
+            re.DOTALL,
+        )
+        cls.helpers = match.group(1) if match else ""
+        cls.page = page
+
+    def export_markdown(self, articles, records):
+        script = (
+            "const vm=require('node:vm');\n"
+            "const input=JSON.parse(require('node:fs').readFileSync(0,'utf8'));\n"
+            f"vm.runInThisContext({json.dumps(self.helpers)});\n"
+            "process.stdout.write(JSON.stringify(buildNotesMarkdown(input.articles,input.records)));\n"
+        )
+        result = subprocess.run(
+            [self.node, "-e", script],
+            input=json.dumps({"articles": articles, "records": records}),
+            text=True, capture_output=True, check=True, encoding="utf-8",
+        )
+        return json.loads(result.stdout)
+
+    def test_exports_nonempty_notes_with_article_metadata_and_excludes_empty_records(self):
+        articles = [
+            {
+                "title": "Carbon pathways",
+                "authors": ["Lin, A.", "Chen, B."],
+                "journal": "Nature Energy",
+                "pubdate": "2026-10-31",
+                "doi": "10.1000/carbon",
+                "url": "https://example.org/carbon",
+                "topics": ["CCUS", "能源转型"],
+            },
+            {"title": "No note", "doi": "10.1000/empty", "url": "https://example.org/empty"},
+        ]
+        records = {
+            "10.1000/carbon": {"note": "方法值得复用\n需要核对边界条件", "read": True, "saved": True},
+            "10.1000/empty": {"note": "  ", "read": True},
+        }
+        markdown = self.export_markdown(articles, records)
+        self.assertIn("# 文献阅读笔记", markdown)
+        self.assertIn("共 1 篇", markdown)
+        self.assertIn("## 1. Carbon pathways", markdown)
+        self.assertIn("作者：Lin, A.; Chen, B.", markdown)
+        self.assertIn("期刊：Nature Energy", markdown)
+        self.assertIn("发表日期：2026-10-31", markdown)
+        self.assertIn("DOI：10.1000/carbon", markdown)
+        self.assertIn("原文链接：https://example.org/carbon", markdown)
+        self.assertIn("关注方向：CCUS / 能源转型", markdown)
+        self.assertIn("> 方法值得复用\n> 需要核对边界条件", markdown)
+        self.assertNotIn("No note", markdown)
+
+    def test_places_notes_export_button_next_to_sort_controls(self):
+        controls = re.search(r'<div class="seg" id="sortseg">(.*?)</div>(.*?)<div class="count"', self.page, re.DOTALL)
+        self.assertIsNotNone(controls)
+        self.assertIn('id="export-notes"', controls.group(2))
+        self.assertIn("导出笔记", controls.group(2))
+
+    def test_updates_export_button_count_when_a_note_is_saved(self):
+        self.assertIn("id=\"note-count\"", self.page)
+        self.assertIn("updateNotesExportButton()", self.page)
+        self.assertIn("articleSnapshot(a)", self.page)
+
+    def test_exports_notes_for_articles_that_have_left_the_current_page(self):
+        markdown = self.export_markdown([], {
+            "10.1000/archived": {
+                "note": "保留长期比较",
+                "article": {
+                    "title": "Archived study",
+                    "journal": "One Earth",
+                    "pubdate": "2025-03-01",
+                    "doi": "10.1000/archived",
+                    "url": "https://example.org/archived",
+                },
+            },
+        })
+        self.assertIn("## 1. Archived study", markdown)
+        self.assertIn("期刊：One Earth", markdown)
+        self.assertIn("> 保留长期比较", markdown)
+
+
 if __name__ == "__main__":
     unittest.main()

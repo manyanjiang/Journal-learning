@@ -437,6 +437,8 @@ svg.ic{display:block;flex:none}
 .seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px}
 .seg button{border:0;background:transparent;font-size:12.5px;padding:5px 12px;border-radius:999px;cursor:pointer;color:var(--ink2);font-family:inherit;transition:.16s}
 .seg button.on{background:var(--ink);color:#fff;font-weight:600}
+.export-note-btn{white-space:nowrap}
+.export-note-btn:disabled{opacity:.48;cursor:not-allowed}
 .count{font-size:12.5px;color:var(--ink3);margin-left:auto;white-space:nowrap}
 .local-controls{justify-content:space-between}
 .local-note{font-size:12px;color:var(--ink3)}
@@ -597,6 +599,7 @@ svg.ic{display:block;flex:none}
         <button data-s="date" type="button">按日期</button>
         <button data-s="journal" type="button">按期刊</button>
       </div>
+      <button class="btn export-note-btn" id="export-notes" type="button">导出笔记 <span id="note-count">(0)</span></button>
       <div class="count" id="count"></div>
     </div>
     <div class="row local-controls">
@@ -654,6 +657,12 @@ svg.ic{display:block;flex:none}
 
   function articleKey(a){ return a.doi || a.url || a.title; }
   function recordOf(a){ return records[articleKey(a)] || {}; }
+  function articleSnapshot(a){
+    return {
+      title:a.title || '', authors:a.authors || [], journal:a.journal || '',
+      pubdate:a.pubdate || '', doi:a.doi || '', url:a.url || '', topics:a.topics || []
+    };
+  }
   function saveRecords(){
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
     catch (e) { /* Keep the page usable when browser storage is unavailable. */ }
@@ -661,7 +670,90 @@ svg.ic{display:block;flex:none}
   function updateRecord(a, patch){
     var key = articleKey(a);
     records[key] = Object.assign({}, records[key] || {}, patch);
+    records[key].article = articleSnapshot(a);
     saveRecords();
+    updateNotesExportButton();
+  }
+  var migratedRecords = false;
+  A.forEach(function(article){
+    var record = records[articleKey(article)];
+    var snapshot = articleSnapshot(article);
+    if(record && JSON.stringify(record.article || {})!==JSON.stringify(snapshot)){
+      record.article = snapshot;
+      migratedRecords = true;
+    }
+  });
+  if(migratedRecords) saveRecords();
+
+  // NOTES_EXPORT_HELPERS_START
+  function notesText(value){
+    return String(value==null?'':value).replace(/\r\n?/g,'\n').trim();
+  }
+  function notesLine(label, value){
+    var text = notesText(value).replace(/\n/g,' ');
+    return text ? '- '+label+'：'+text+'\n' : '';
+  }
+  function buildNotesMarkdown(articles, records){
+    var current = {};
+    (articles||[]).forEach(function(article){ current[article.doi || article.url || article.title] = article; });
+    var entries = Object.keys(records||{}).map(function(key){
+      var record = records[key] || {};
+      var note = notesText(record.note);
+      if(!note) return null;
+      var article = current[key] || record.article || {title:'文献信息未收录'};
+      if(!article.doi && /^10\.\d{4,9}\//.test(key)) article.doi = key;
+      if(!article.url && /^https?:\/\//.test(key)) article.url = key;
+      return {article:article, note:note};
+    }).filter(Boolean);
+    entries.sort(function(x,y){
+      return notesText(y.article.pubdate).localeCompare(notesText(x.article.pubdate))
+        || notesText(x.article.journal).localeCompare(notesText(y.article.journal));
+    });
+    var lines = ['# 文献阅读笔记\n', '导出时间：'+new Date().toISOString()+'\n', '共 '+entries.length+' 篇\n'];
+    entries.forEach(function(entry, index){
+      var article = entry.article;
+      lines.push('\n## '+(index+1)+'. '+notesText(article.title)+'\n');
+      lines.push(notesLine('作者',(article.authors||[]).join('; ')));
+      lines.push(notesLine('期刊',article.journal));
+      lines.push(notesLine('发表日期',article.pubdate));
+      lines.push(notesLine('DOI',article.doi));
+      lines.push(notesLine('原文链接',article.url));
+      lines.push(notesLine('关注方向',(article.topics||[]).join(' / ')));
+      lines.push('\n### 我的笔记\n');
+      entry.note.split('\n').forEach(function(line){ lines.push('> '+line+'\n'); });
+    });
+    return lines.join('');
+  }
+  // NOTES_EXPORT_HELPERS_END
+
+  function notesCount(){
+    return Object.keys(records).reduce(function(total, key){
+      return total + (notesText(records[key] && records[key].note) ? 1 : 0);
+    }, 0);
+  }
+  function updateNotesExportButton(){
+    var button = document.getElementById('export-notes');
+    var count = document.getElementById('note-count');
+    var total = notesCount();
+    if(button && count){
+      count.textContent = '('+total+')';
+      button.disabled = total===0;
+    }
+  }
+  function localDateStamp(){
+    var date = new Date();
+    return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+  }
+  function downloadNotes(){
+    var blob = new Blob([buildNotesMarkdown(A, records)], {type:'text/markdown;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'journal-reading-notes-'+localDateStamp()+'.md';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },0);
   }
 
   // RIS_EXPORT_HELPERS_START
@@ -754,6 +846,7 @@ svg.ic{display:block;flex:none}
     [].forEach.call(this.children, function(x){ x.classList.toggle('on', x===b); });
     render();
   };
+  document.getElementById('export-notes').onclick = downloadNotes;
   document.getElementById('readseg').onclick = function(e){
     var b = e.target.closest('button'); if(!b) return;
     state.reading = b.dataset.state;
@@ -965,6 +1058,7 @@ svg.ic{display:block;flex:none}
   });
 
   render();
+  updateNotesExportButton();
 })();
 </script>
 </body>
