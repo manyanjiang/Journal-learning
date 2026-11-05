@@ -663,6 +663,51 @@ svg.ic{display:block;flex:none}
     saveRecords();
   }
 
+  // RIS_EXPORT_HELPERS_START
+  function risValue(value){
+    if(value==null) return '';
+    return String(value).replace(/\r\n?|\n/g,' ').trim();
+  }
+  function risField(tag, value){
+    var text = risValue(value);
+    return text ? tag+'  - '+text+'\r\n' : '';
+  }
+  function buildRis(article){
+    var lines = ['TY  - JOUR\r\n', risField('TI',article.title)];
+    (article.authors||[]).forEach(function(author){ lines.push(risField('AU',author)); });
+    lines.push(risField('JF',article.journal));
+    var date = risValue(article.pubdate);
+    var year = date.match(/^(\d{4})(?:-|$)/);
+    lines.push(risField('PY',year ? year[1] : ''));
+    lines.push(risField('DO',article.doi));
+    lines.push(risField('AB',article.abstract));
+    lines.push(risField('UR',article.url));
+    lines.push('ER  - \r\n');
+    return lines.join('');
+  }
+  function risFilename(article){
+    var base = risValue(article.doi || article.title || 'citation')
+      .replace(/[\\/:*?"<>|]+/g,'_')
+      .replace(/\s+/g,'_')
+      .replace(/[^A-Za-z0-9._-]/g,'_')
+      .replace(/_+/g,'_')
+      .replace(/^[_\.]+|[_\.]+$/g,'')
+      .slice(0,100);
+    return (base || 'citation')+'.ris';
+  }
+  function downloadRis(article){
+    var blob = new Blob([buildRis(article)], {type:'application/x-research-info-systems;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = risFilename(article);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },0);
+  }
+  // RIS_EXPORT_HELPERS_END
+
   /* An article can hit several keyword groups at once. a.topics holds every
      match (used for filtering); a.topic is the primary one (used for the cover
      chip and the section grouping, so nothing is listed twice). */
@@ -872,6 +917,7 @@ svg.ic{display:block;flex:none}
       +   '<div class="personal-actions">'
       +     '<button class="btn" id="mread" type="button">'+(record.read?'标为待读':'标记已读')+'</button>'
       +     '<button class="btn" id="msave" type="button">'+(record.saved?'取消收藏':'加入收藏')+'</button>'
+      +     '<button class="btn" id="mris" type="button">下载 RIS</button>'
       +   '</div>'
       +   '<label class="note-label" for="mnote">我的笔记</label>'
       +   '<textarea class="note-input" id="mnote" placeholder="记录阅读要点">'+esc(record.note||'')+'</textarea>'
@@ -900,6 +946,7 @@ svg.ic{display:block;flex:none}
       updateRecord(a, {saved:!recordOf(a).saved});
       render(); openModal(id);
     };
+    document.getElementById('mris').onclick = function(){ downloadRis(a); };
     document.getElementById('mnote').oninput = function(){ updateRecord(a, {note:this.value}); };
   }
   function closeModal(){ mask.classList.remove('on'); document.body.style.overflow=''; }
