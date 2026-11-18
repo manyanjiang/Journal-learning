@@ -626,8 +626,10 @@ on:
 
 **Actions** → 左侧 `journal-alert daily` → **Run workflow**。可以填两个输入框：
 
-* `days` —— 覆盖时间窗，第一次建议填 `14`，先看一批历史文献
+* `days` —— 覆盖时间窗。一次性补抓近半年填 `180`；这不改变日常默认的 3 天窗口
 * `sources` —— 例如填 `openalex,crossref` 先只跑 API
+
+OpenAlex 与 Crossref 会按游标分页；每个期刊、每个 API 最多抓取 `window.max_items_per_journal` 条（当前为 5000）。如果运行日志提示达到上限，该期刊的半年结果可能仍不完整。抓取到的结果还会按 `config.json` 关键词评分，未命中关键词的论文不会进入日报和卡片墙。
 
 也可以不点鼠标，用 API 直接触发：
 
@@ -636,7 +638,7 @@ curl -s -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: application/vnd.github+json" \
   https://api.github.com/repos/<owner>/<repo>/actions/workflows/daily.yml/dispatches \
-  -d '{"ref":"main","inputs":{"days":"14"}}'
+  -d '{"ref":"main","inputs":{"days":"180"}}'
 # HTTP 204 = 已受理
 ```
 

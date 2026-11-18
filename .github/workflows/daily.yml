@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       days:
-        description: "覆盖时间窗（天）。留空 = 用 config.json 的自适应窗口"
+        description: "覆盖时间窗（天），如 180 = 近6个月。留空 = 用 config.json 的自适应窗口"
         required: false
         default: ""
       sources:

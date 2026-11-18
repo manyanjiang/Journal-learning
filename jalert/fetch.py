@@ -29,6 +29,8 @@ USER_AGENT = os.environ.get("JALERT_USER_AGENT") or "Mozilla/5.0 (compatible; Jo
 # shipping a placeholder in a public repo.
 MAILTO = os.environ.get("JALERT_MAILTO") or "journal-alert@example.com"
 TIMEOUT = 30
+OPENALEX_PAGE_SIZE = 100
+CROSSREF_PAGE_SIZE = 1000
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
@@ -291,43 +293,55 @@ def fetch_openalex(journal: dict, since: str, per_page: int, log, timeout: int =
     issn = journal.get("issn", "")
     if not issn:
         return []
-    params = {
-        "filter": f"primary_location.source.issn:{issn},from_publication_date:{since},type:article",
-        "per-page": str(per_page),
-        "sort": "publication_date:desc",
-        "mailto": MAILTO,
-    }
-    url = "https://api.openalex.org/works?" + urllib.parse.urlencode(params)
-    status, raw = http_request(url, timeout=timeout, retries=retries)
-    if status != 200:
-        raise FetchError(f"OpenAlex HTTP {status}")
-    payload = json.loads(_decode(raw))
     items: list[Item] = []
-    for work in payload.get("results", []):
-        title = _clean(work.get("title") or work.get("display_name") or "")
-        if not title:
-            continue
-        doi = (work.get("doi") or "").replace("https://doi.org/", "").strip().lower()
-        location = work.get("primary_location") or {}
-        landing = location.get("landing_page_url") or (work.get("doi") or "")
-        authors = [
-            _clean((a.get("author") or {}).get("display_name"))
-            for a in (work.get("authorships") or [])[:12]
-        ]
-        items.append(
-            Item(
-                uid=make_uid(doi, landing, title),
-                title=title,
-                url=landing or "",
-                doi=doi,
-                journal=journal["name"],
-                issn=issn,
-                date=_parse_date(work.get("publication_date")),
-                abstract=_clean(_inverted_abstract(work.get("abstract_inverted_index"))),
-                authors=[a for a in authors if a],
-                source="openalex",
+    cursor = "*"
+    target = max(0, int(per_page))
+    while len(items) < target:
+        page_size = min(OPENALEX_PAGE_SIZE, target - len(items))
+        params = {
+            "filter": f"primary_location.source.issn:{issn},from_publication_date:{since},type:article",
+            "per-page": str(page_size),
+            "sort": "publication_date:desc",
+            "mailto": MAILTO,
+            "cursor": cursor,
+        }
+        url = "https://api.openalex.org/works?" + urllib.parse.urlencode(params)
+        status, raw = http_request(url, timeout=timeout, retries=retries)
+        if status != 200:
+            raise FetchError(f"OpenAlex HTTP {status}")
+        payload = json.loads(_decode(raw))
+        results = payload.get("results", [])
+        for work in results:
+            title = _clean(work.get("title") or work.get("display_name") or "")
+            if not title:
+                continue
+            doi = (work.get("doi") or "").replace("https://doi.org/", "").strip().lower()
+            location = work.get("primary_location") or {}
+            landing = location.get("landing_page_url") or (work.get("doi") or "")
+            authors = [
+                _clean((a.get("author") or {}).get("display_name"))
+                for a in (work.get("authorships") or [])[:12]
+            ]
+            items.append(
+                Item(
+                    uid=make_uid(doi, landing, title),
+                    title=title,
+                    url=landing or "",
+                    doi=doi,
+                    journal=journal["name"],
+                    issn=issn,
+                    date=_parse_date(work.get("publication_date")),
+                    abstract=_clean(_inverted_abstract(work.get("abstract_inverted_index"))),
+                    authors=[a for a in authors if a],
+                    source="openalex",
+                )
             )
-        )
+        next_cursor = (payload.get("meta") or {}).get("next_cursor")
+        if not results or not next_cursor or next_cursor == cursor:
+            break
+        cursor = next_cursor
+    if len(items) >= target and target and next_cursor and log:
+        log.warning("OpenAlex reached the configured per-journal cap (%d) for %s", target, journal["name"])
     return items
 
 
@@ -340,62 +354,75 @@ def fetch_crossref(journal: dict, since: str, rows: int, log, timeout: int = 30,
     issn = journal.get("issn", "")
     if not issn:
         return []
-    params = {
-        "filter": f"from-pub-date:{since},type:journal-article",
-        "rows": str(rows),
-        "sort": "published",
-        "order": "desc",
-        "mailto": MAILTO,
-    }
-    url = f"https://api.crossref.org/journals/{issn}/works?" + urllib.parse.urlencode(params)
-    status, raw = http_request(url, timeout=timeout, retries=retries)
-    if status != 200:
-        raise FetchError(f"Crossref HTTP {status}")
-    payload = json.loads(_decode(raw))
     items: list[Item] = []
-    for work in payload.get("message", {}).get("items", []):
-        titles = work.get("title") or []
-        title = _clean(titles[0]) if titles else ""
-        if not title:
-            continue
-        doi = (work.get("DOI") or "").lower()
-        url_value = work.get("URL") or (f"https://doi.org/{doi}" if doi else "")
-        published = (
-            work.get("published-online")
-            or work.get("published")
-            or work.get("published-print")
-            or work.get("issued")
-            or {}
-        )
-        parts = list((published.get("date-parts") or [[None]])[0] or [])
-        date_value = ""
-        if parts and parts[0]:
-            year = int(parts[0])
-            month = int(parts[1]) if len(parts) > 1 and parts[1] else 1
-            day = int(parts[2]) if len(parts) > 2 and parts[2] else 1
-            try:
-                date_value = date(year, month, day).isoformat()
-            except ValueError:
-                date_value = ""
-        authors = []
-        for author in (work.get("author") or [])[:12]:
-            name = " ".join(x for x in (author.get("given"), author.get("family")) if x)
-            if name:
-                authors.append(_clean(name))
-        items.append(
-            Item(
-                uid=make_uid(doi, url_value, title),
-                title=title,
-                url=url_value,
-                doi=doi,
-                journal=journal["name"],
-                issn=issn,
-                date=date_value,
-                abstract=_clean(work.get("abstract")),
-                authors=authors,
-                source="crossref",
+    cursor = "*"
+    target = max(0, int(rows))
+    while len(items) < target:
+        page_size = min(CROSSREF_PAGE_SIZE, target - len(items))
+        params = {
+            "filter": f"from-pub-date:{since},type:journal-article",
+            "rows": str(page_size),
+            "sort": "published",
+            "order": "desc",
+            "mailto": MAILTO,
+            "cursor": cursor,
+        }
+        url = f"https://api.crossref.org/journals/{issn}/works?" + urllib.parse.urlencode(params)
+        status, raw = http_request(url, timeout=timeout, retries=retries)
+        if status != 200:
+            raise FetchError(f"Crossref HTTP {status}")
+        payload = json.loads(_decode(raw))
+        message = payload.get("message", {})
+        page_items = message.get("items", [])
+        for work in page_items:
+            titles = work.get("title") or []
+            title = _clean(titles[0]) if titles else ""
+            if not title:
+                continue
+            doi = (work.get("DOI") or "").lower()
+            url_value = work.get("URL") or (f"https://doi.org/{doi}" if doi else "")
+            published = (
+                work.get("published-online")
+                or work.get("published")
+                or work.get("published-print")
+                or work.get("issued")
+                or {}
             )
-        )
+            parts = list((published.get("date-parts") or [[None]])[0] or [])
+            date_value = ""
+            if parts and parts[0]:
+                year = int(parts[0])
+                month = int(parts[1]) if len(parts) > 1 and parts[1] else 1
+                day = int(parts[2]) if len(parts) > 2 and parts[2] else 1
+                try:
+                    date_value = date(year, month, day).isoformat()
+                except ValueError:
+                    date_value = ""
+            authors = []
+            for author in (work.get("author") or [])[:12]:
+                name = " ".join(x for x in (author.get("given"), author.get("family")) if x)
+                if name:
+                    authors.append(_clean(name))
+            items.append(
+                Item(
+                    uid=make_uid(doi, url_value, title),
+                    title=title,
+                    url=url_value,
+                    doi=doi,
+                    journal=journal["name"],
+                    issn=issn,
+                    date=date_value,
+                    abstract=_clean(work.get("abstract")),
+                    authors=authors,
+                    source="crossref",
+                )
+            )
+        next_cursor = message.get("next-cursor")
+        if not page_items or not next_cursor or next_cursor == cursor:
+            break
+        cursor = next_cursor
+    if len(items) >= target and target and next_cursor and log:
+        log.warning("Crossref reached the configured per-journal cap (%d) for %s", target, journal["name"])
     return items
 
 
