@@ -52,6 +52,9 @@
         "emissions reduction",
         "fossil fuel co2 emissions",
         "power sector emissions",
+        "greenhouse gas emissions",
+        "carbon emissions",
+        "sectoral emissions",
         "co2",
         "carbon dioxide"
       ]
@@ -87,7 +90,23 @@
         "storage resource assessment",
         "carbon storage resource",
         "kilometer-scale co2 storage",
-        "kilometre-scale co2 storage"
+        "kilometre-scale co2 storage",
+        "geologic sequestration",
+        "underground co2 storage",
+        "subsurface co2 storage",
+        "co2 injection",
+        "deep saline aquifer",
+        "saline formation storage",
+        "co2-eor",
+        "co2 enhanced oil recovery",
+        "co2-egr",
+        "co2 enhanced gas recovery",
+        "co2 storage in depleted oil reservoirs",
+        "co2 storage in depleted gas reservoirs",
+        "depleted reservoir storage",
+        "carbon mineralization",
+        "carbon mineralisation",
+        "mineral storage"
       ]
     },
     {
@@ -108,7 +127,15 @@
         "enhanced weathering",
         "ocean alkalinity enhancement",
         "biochar carbon removal",
-        "carbon removal potential"
+        "carbon removal potential",
+        "biochar",
+        "ocean carbon dioxide removal",
+        "marine carbon dioxide removal",
+        "carbon dioxide removal technologies",
+        "bio-energy with carbon capture and storage",
+        "bioenergy with carbon capture and sequestration",
+        "bioenergy carbon capture and storage",
+        "biomass energy with carbon capture and storage"
       ]
     },
     {
@@ -132,7 +159,9 @@
         "net zero transition",
         "energy roadmap",
         "carbon neutrality",
-        "net zero"
+        "net zero",
+        "net-zero emissions",
+        "net zero emissions"
       ]
     },
     {
@@ -181,6 +210,11 @@
         "photovoltaic potential",
         "renewable energy potential",
         "renewable resource assessment",
+        "electricity system modeling",
+        "electricity system modelling",
+        "power system planning",
+        "renewable energy integration",
+        "solar photovoltaic",
         "wind and solar",
         "solar and wind",
         "variable renewable energy"
@@ -225,7 +259,12 @@
         "space-time modeling",
         "space-time modelling",
         "kilometer resolution",
-        "kilometre resolution"
+        "kilometre resolution",
+        "facility siting",
+        "infrastructure planning",
+        "spatially resolved",
+        "geospatial optimization",
+        "geospatial optimisation"
       ]
     },
     {
@@ -249,7 +288,11 @@
         "climate risk",
         "climate resilience",
         "climate adaptation",
-        "climate impact attribution"
+        "climate impact attribution",
+        "heat stress",
+        "precipitation extremes",
+        "compound extreme events",
+        "climate attribution"
       ]
     },
     {
@@ -279,7 +322,12 @@
         "land-use change",
         "urban land use",
         "urban geography",
-        "city-scale energy model"
+        "city-scale energy model",
+        "urban decarbonization pathways",
+        "urban decarbonisation pathways",
+        "urban energy planning",
+        "urban climate change",
+        "city-level emissions"
       ]
     },
     {
@@ -307,7 +355,11 @@
         "full chain techno-economic analysis",
         "techno-economic performance",
         "economic viability",
-        "life cycle costing"
+        "life cycle costing",
+        "life-cycle greenhouse gas emissions",
+        "levelized cost of energy",
+        "levelised cost of energy",
+        "social cost of carbon"
       ]
     },
     {
@@ -330,7 +382,93 @@
         "energy technology roadmap",
         "mitigation policy",
         "policy pathway",
-        "energy transition policy"
+        "energy transition policy",
+        "just transition",
+        "just transitions",
+        "climate justice",
+        "climate equity",
+        "climate fairness",
+        "energy justice",
+        "equitable transition",
+        "fair transition",
+        "distributional impacts",
+        "distributional effects",
+        "procedural justice",
+        "recognitional justice",
+        "intergenerational equity",
+        "loss and damage",
+        "climate finance",
+        "carbon neutrality",
+        "net-zero emissions",
+        "net zero emissions"
+      ]
+    },
+    {
+      "label": "氢氨醇等新燃料",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "green hydrogen",
+        "low-carbon hydrogen",
+        "low carbon hydrogen",
+        "renewable hydrogen",
+        "clean hydrogen",
+        "electrolytic hydrogen",
+        "hydrogen production",
+        "hydrogen storage",
+        "hydrogen carrier",
+        "hydrogen carriers",
+        "green ammonia",
+        "low-carbon ammonia",
+        "low carbon ammonia",
+        "ammonia fuel",
+        "ammonia energy",
+        "ammonia production",
+        "green methanol",
+        "e-methanol",
+        "renewable methanol",
+        "methanol fuel",
+        "bioethanol",
+        "e-fuel",
+        "e-fuels",
+        "electrofuel",
+        "electrofuels",
+        "synthetic fuel",
+        "synthetic fuels",
+        "power-to-x",
+        "power to x",
+        "power-to-gas",
+        "power to gas",
+        "power-to-liquid",
+        "power to liquid",
+        "sustainable aviation fuel",
+        "sustainable aviation fuels",
+        "advanced biofuel",
+        "advanced biofuels"
+      ]
+    },
+    {
+      "label": "地热与其他可再生能源",
+      "main": true,
+      "weight": 3,
+      "terms": [
+        "geothermal energy",
+        "geothermal power",
+        "geothermal resource assessment",
+        "geothermal potential",
+        "enhanced geothermal systems",
+        "enhanced geothermal system",
+        "egs",
+        "deep geothermal",
+        "geothermal reservoir",
+        "geothermal reservoirs",
+        "geothermal heating",
+        "geothermal heat pump",
+        "geothermal heat pumps",
+        "tidal energy",
+        "wave energy",
+        "marine energy",
+        "hydropower"
       ]
     }
   ],

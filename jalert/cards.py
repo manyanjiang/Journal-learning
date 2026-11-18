@@ -415,12 +415,17 @@ svg.ic{display:block;flex:none}
 
 .controls{max-width:1560px;margin:0 auto;padding:12px 22px;display:flex;flex-direction:column;gap:10px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
+.topic-nav{display:flex;align-items:center;gap:10px;min-width:0}
+.topic-jump{display:flex;align-items:center;gap:7px;flex:none;color:var(--ink2);font-size:12px;font-weight:600}
+.topic-jump select{max-width:230px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);padding:8px 30px 8px 12px;font:inherit;cursor:pointer}
+.tabs{display:flex;flex:1;min-width:0;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin;scrollbar-color:#c5c8d0 transparent;overscroll-behavior-x:contain}
+.tabs::-webkit-scrollbar{height:5px}
+.tabs::-webkit-scrollbar-track{background:transparent}
+.tabs::-webkit-scrollbar-thumb{background:#c5c8d0;border-radius:5px}
 .tab{
   border:1px solid var(--line);background:#fff;color:var(--ink2);
   font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;
-  white-space:nowrap;transition:.16s;display:flex;align-items:center;gap:7px;font-family:inherit;
+  white-space:nowrap;flex:none;transition:.16s;display:flex;align-items:center;gap:7px;font-family:inherit;
 }
 .tab svg{width:15px;height:15px;stroke-width:1.9}
 .tab:hover{border-color:#dcdce4;transform:translateY(-1px)}
@@ -456,6 +461,10 @@ svg.ic{display:block;flex:none}
 @media(max-width:620px){
   .wall{columns:1}
   .topbar-in,.controls,.wall,.grouphead{padding-left:14px;padding-right:14px}
+  .topic-nav{align-items:stretch;flex-direction:column;gap:6px}
+  .topic-jump{justify-content:space-between}
+  .topic-jump select{max-width:none;flex:1}
+  .tabs{width:100%;flex:none}
   .kpi{display:none}
 }
 .card{
@@ -585,7 +594,10 @@ svg.ic{display:block;flex:none}
     </div>
   </div>
   <div class="controls">
-    <div class="tabs" id="tabs"></div>
+    <div class="topic-nav">
+      <label class="topic-jump"><span>跳转主题</span><select id="topic-jump" aria-label="跳转到主题"><option value="all">全部主题</option></select></label>
+      <div class="tabs" id="tabs"></div>
+    </div>
     <div class="row">
       <input class="search" id="q" type="search" placeholder="搜索标题 / 摘要 / 作者 / 期刊…">
       <div class="seg" id="seg">
@@ -608,6 +620,7 @@ svg.ic{display:block;flex:none}
         <button data-state="unread" type="button">待读</button>
         <button data-state="read" type="button">已读</button>
         <button data-state="saved" type="button">收藏</button>
+        <button data-state="hidden" type="button">已隐藏</button>
       </div>
       <span class="local-note">阅读状态与笔记保存在此浏览器</span>
     </div>
@@ -657,6 +670,20 @@ svg.ic{display:block;flex:none}
 
   function articleKey(a){ return a.doi || a.url || a.title; }
   function recordOf(a){ return records[articleKey(a)] || {}; }
+  // LOCAL_HIDDEN_HELPERS_START
+  function recordMatchesReadingState(record, reading){
+    record = record || {};
+    if(reading==='hidden') return !!record.hidden;
+    if(record.hidden) return false;
+    if(reading==='unread') return !record.read;
+    if(reading==='read') return !!record.read;
+    if(reading==='saved') return !!record.saved;
+    return true;
+  }
+  function mergeArticleRecord(record, patch){
+    return Object.assign({}, record || {}, patch || {});
+  }
+  // LOCAL_HIDDEN_HELPERS_END
   function articleSnapshot(a){
     return {
       title:a.title || '', authors:a.authors || [], journal:a.journal || '',
@@ -669,7 +696,7 @@ svg.ic{display:block;flex:none}
   }
   function updateRecord(a, patch){
     var key = articleKey(a);
-    records[key] = Object.assign({}, records[key] || {}, patch);
+    records[key] = mergeArticleRecord(records[key], patch);
     records[key].article = articleSnapshot(a);
     saveRecords();
     updateNotesExportButton();
@@ -824,15 +851,27 @@ svg.ic{display:block;flex:none}
     var b = document.createElement('button');
     b.className = 'tab' + (d.k==='all'?' on':'');
     b.type = 'button';
+    b.dataset.topic = d.k;
     var n = d.k==='all' ? C.all : (C[d.k]||0);
     b.innerHTML = svg(d.icon) + '<span>'+d.label+'</span><span class="n">'+n+'</span>';
+    var option = document.createElement('option');
+    option.value = d.k;
+    option.textContent = d.label + ' (' + n + ')';
+    if(d.k!=='all') document.getElementById('topic-jump').appendChild(option);
     b.onclick = function(){
       state.topic = d.k;
-      [].forEach.call(tabs.children, function(x){ x.classList.toggle('on', x===b); });
+      document.getElementById('topic-jump').value = d.k;
+      [].forEach.call(tabs.children, function(x){ x.classList.toggle('on', x.dataset.topic===d.k); });
       render();
     };
     tabs.appendChild(b);
   });
+  var topicJump = document.getElementById('topic-jump');
+  topicJump.onchange = function(){
+    state.topic = this.value;
+    [].forEach.call(tabs.children, function(x){ x.classList.toggle('on', x.dataset.topic===state.topic); });
+    render();
+  };
 
   document.getElementById('seg').onclick = function(e){
     var b = e.target.closest('button'); if(!b) return;
@@ -881,9 +920,7 @@ svg.ic{display:block;flex:none}
       if(state.topic!=='all' && topicsOf(a).indexOf(state.topic)<0) return false;
       if(state.tier!=='all' && a.tier!==state.tier) return false;
       var record = recordOf(a);
-      if(state.reading==='unread' && record.read) return false;
-      if(state.reading==='read' && !record.read) return false;
-      if(state.reading==='saved' && !record.saved) return false;
+      if(!recordMatchesReadingState(record,state.reading)) return false;
       if(q){
         var hay = (a.title+' '+a.abstract+' '+a.authors.join(' ')+' '+a.journal+' '+a.doi).toLowerCase();
         if(hay.indexOf(q)<0) return false;
@@ -952,7 +989,7 @@ svg.ic{display:block;flex:none}
 
   function render(){
     var list = select();
-    var READ_NAME = {all:'全部状态', unread:'待读', read:'已读', saved:'收藏'};
+    var READ_NAME = {all:'全部状态', unread:'待读', read:'已读', saved:'收藏', hidden:'已隐藏'};
     var scope = (state.topic==='all' ? '全部学科' : state.topic)
               + (state.tier==='all' ? '' : ' · '+TIER_NAME[state.tier])
               + (state.reading==='all' ? '' : ' · '+READ_NAME[state.reading]);
@@ -1015,6 +1052,7 @@ svg.ic{display:block;flex:none}
       +     '<button class="btn" id="mread" type="button">'+(record.read?'标为待读':'标记已读')+'</button>'
       +     '<button class="btn" id="msave" type="button">'+(record.saved?'取消收藏':'加入收藏')+'</button>'
       +     '<button class="btn" id="mris" type="button">下载 RIS</button>'
+      +     '<button class="btn" id="mhide" type="button">'+(record.hidden?'恢复显示':'从我的阅读中心移除')+'</button>'
       +   '</div>'
       +   '<label class="note-label" for="mnote">我的笔记</label>'
       +   '<textarea class="note-input" id="mnote" placeholder="记录阅读要点">'+esc(record.note||'')+'</textarea>'
@@ -1042,6 +1080,10 @@ svg.ic{display:block;flex:none}
     document.getElementById('msave').onclick = function(){
       updateRecord(a, {saved:!recordOf(a).saved});
       render(); openModal(id);
+    };
+    document.getElementById('mhide').onclick = function(){
+      updateRecord(a, {hidden:!recordOf(a).hidden});
+      closeModal(); render();
     };
     document.getElementById('mris').onclick = function(){ downloadRis(a); };
     document.getElementById('mnote').oninput = function(){ updateRecord(a, {note:this.value}); };
